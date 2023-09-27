@@ -23,6 +23,7 @@ row_t* row_create(double* xvalues, double* yvalues, int length) {
 void row_update_points(row_t* row) {
 
 	datarow_t* drow = (datarow_t*) row->priv;
+
 	EnterCriticalSection(&(drow->lock));
 
 	SafeFree(drow->points);

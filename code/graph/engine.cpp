@@ -9,6 +9,8 @@
 } \
 
 // Vorwärtsdeklarationen
+
+static void engine_paint_mask(engine_t* engine);
 static void engine_paint_title(engine_t* engine);
 static void engine_paint_grid(engine_t* engine);
 static void engine_paint_border(engine_t* engine);
@@ -75,6 +77,13 @@ void engine_create_brush(engine_t* engine) {
         &pGrayBrush
     );
     engine->grayBrush = pGrayBrush;
+
+    ID2D1SolidColorBrush* pWhiteBrush = NULL;
+    engine->target->CreateSolidColorBrush(
+        D2D1::ColorF(D2D1::ColorF::White),
+        &pWhiteBrush
+    );
+    engine->whiteBrush = pWhiteBrush;
 
     int colors[] = {    D2D1::ColorF::DarkOrange, D2D1::ColorF::DarkBlue, D2D1::ColorF::DarkRed,
                         D2D1::ColorF::DarkGreen, D2D1::ColorF::DarkCyan, D2D1::ColorF::DarkMagenta };
@@ -169,9 +178,11 @@ void engine_paint(engine_t* engine) {
     t->Clear(D2D1::ColorF(D2D1::ColorF::White));
 
     engine_paint_grid(engine);
-    engine_paint_minorgrid(engine);
-    engine_paint_border(engine);
     engine_paint_data(engine);
+    engine_paint_minorgrid(engine);
+    engine_paint_mask(engine);
+
+    engine_paint_border(engine);
     engine_paint_ticklabels(engine);
     engine_paint_title(engine);
 
@@ -187,16 +198,16 @@ static void engine_paint_grid(engine_t* engine) {
     // xgrid
     for (int i= 0; i<g->xaxis->ticks->length; i++) {
         double x = g->xaxis->ticks->values[i];
-        point_t p1 = graph_to_view(g, { x, g->yaxis->limit.min });
-        point_t p2 = graph_to_view(g, { x, g->yaxis->limit.max });
+        point_t p1 = graphics_to_view(g, { x, g->yaxis->limit.min });
+        point_t p2 = graphics_to_view(g, { x, g->yaxis->limit.max });
         engine_drawline(t, p1, p2, engine->grayBrush, 0.5);
     }
 
     // ygrid
     for (int i = 0; i < g->yaxis->ticks->length; i++) {
         double y = g->yaxis->ticks->values[i];
-        point_t p1 = graph_to_view(g, { g->xaxis->limit.min, y });
-        point_t p2 = graph_to_view(g, { g->xaxis->limit.max, y });
+        point_t p1 = graphics_to_view(g, { g->xaxis->limit.min, y });
+        point_t p2 = graphics_to_view(g, { g->xaxis->limit.max, y });
         engine_drawline(t, p1, p2, engine->grayBrush, 0.5);
     }
 
@@ -211,8 +222,8 @@ static void engine_paint_minorgrid(engine_t* engine) {
     if (g->xaxis->scale == SCALE_LOG) {
         for (int i = 0; i < g->xaxis->minorticks->length; i++) {
             double x = g->xaxis->minorticks->values[i];
-            point_t p1 = graph_to_view(g, { x, g->yaxis->limit.min });
-            point_t p2 = graph_to_view(g, { x, g->yaxis->limit.max });
+            point_t p1 = graphics_to_view(g, { x, g->yaxis->limit.min });
+            point_t p2 = graphics_to_view(g, { x, g->yaxis->limit.max });
             engine_drawline(t, p1, p2, engine->grayBrush, 0.25);
         }
     }
@@ -221,8 +232,8 @@ static void engine_paint_minorgrid(engine_t* engine) {
     if (g->yaxis->scale == SCALE_LOG) {
         for (int i = 0; i < g->yaxis->minorticks->length; i++) {
             double y = g->yaxis->minorticks->values[i];
-            point_t p1 = graph_to_view(g, { g->xaxis->limit.min, y });
-            point_t p2 = graph_to_view(g, { g->xaxis->limit.max, y });
+            point_t p1 = graphics_to_view(g, { g->xaxis->limit.min, y });
+            point_t p2 = graphics_to_view(g, { g->xaxis->limit.max, y });
             engine_drawline(t, p1, p2, engine->grayBrush, 0.25);
         }
     }
@@ -234,8 +245,8 @@ static void engine_paint_border(engine_t* engine) {
     ID2D1HwndRenderTarget* t = engine->target;
     graphics_t* g = engine->graphics;
 
-    point_t p1 = graph_to_view(g, { g->xaxis->limit.min, g->yaxis->limit.min });
-    point_t p2 = graph_to_view(g, { g->xaxis->limit.max, g->yaxis->limit.max });
+    point_t p1 = graphics_to_view(g, { g->xaxis->limit.min, g->yaxis->limit.min });
+    point_t p2 = graphics_to_view(g, { g->xaxis->limit.max, g->yaxis->limit.max });
 
     D2D1_RECT_F rect = D2D1::RectF((float) p1.x, (float) p1.y, (float) p2.x, (float) p2.y);
 
@@ -265,10 +276,31 @@ static void engine_paint_row(engine_t* engine, row_t *row, ID2D1SolidColorBrush*
     row_get_points(row, &points, &length);
 
     for (int i = 0; i < length - 1; i++) {
-        point_t p1 = graph_to_view(g, points[i]);
-        point_t p2 = graph_to_view(g, points[i + 1]);
+        point_t p1 = graphics_to_view(g, points[i]);
+        point_t p2 = graphics_to_view(g, points[i + 1]);
         engine_drawline(t, p1, p2, brush, 1.0);
     }
+}
+
+
+// fills area around graph with white
+static void engine_paint_mask(engine_t* engine) {
+
+    ID2D1HwndRenderTarget* t = engine->target;
+    graphics_t* g = engine->graphics;
+
+    point_t p1 = graphics_to_view(g, { g->xaxis->limit.min, g->yaxis->limit.min });
+    point_t p2 = graphics_to_view(g, { g->xaxis->limit.max, g->yaxis->limit.max });
+
+    D2D1_RECT_F rtop = D2D1::RectF(0, 0, (float) g->size.width, (float) p2.y);
+    t->FillRectangle(rtop, engine->whiteBrush);
+    D2D1_RECT_F rleft = D2D1::RectF(0, 0, (float) p1.x, (float)g->size.height);
+    t->FillRectangle(rleft, engine->whiteBrush);
+    D2D1_RECT_F rbtm = D2D1::RectF(0, (float) p1.y, (float)g->size.width, (float)g->size.height);
+    t->FillRectangle(rbtm, engine->whiteBrush);
+    D2D1_RECT_F rright = D2D1::RectF((float) p2.x, 0, (float)g->size.width, (float)g->size.height);
+    t->FillRectangle(rright, engine->whiteBrush);
+
 }
 
 static void engine_paint_ticklabels(engine_t* engine) {
@@ -281,7 +313,7 @@ static void engine_paint_ticklabels(engine_t* engine) {
 
         double x = g->xaxis->ticklabels->values[i];
         string_t s = g->xaxis->ticklabels->texts[i];
-        point_t p = graph_to_view(g, { x, g->yaxis->limit.min });
+        point_t p = graphics_to_view(g, { x, g->yaxis->limit.min });
 
         dim_t size = engine_size_textbox(s, FONT_SIZE_TICKLABELS);
         double yoffs = size.height / 2;
@@ -301,7 +333,7 @@ static void engine_paint_ticklabels(engine_t* engine) {
 
         double y = g->yaxis->ticklabels->values[i];
         string_t s = g->yaxis->ticklabels->texts[i];
-        point_t p = graph_to_view(g, { g->xaxis->limit.min, y });
+        point_t p = graphics_to_view(g, { g->xaxis->limit.min, y });
 
         dim_t size = engine_size_textbox(s, FONT_SIZE_TICKLABELS);
         double xoffs = size.height / 2;

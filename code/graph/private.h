@@ -27,7 +27,6 @@
 	printf("]\n"); \
 }
 
-
 #define PrintLimit(a) { \
 	printf("Limit min=%g max=%g\n", a.min, a.max); \
 }
@@ -41,9 +40,13 @@ typedef struct point_t {
 	double x, y;
 } point_t;
 
-// util
-double round_up(double value, double step);
-double round_down(double value, double step);
+
+// util -------------------------------------------------------------
+
+double util_round_up(double value, double step);
+double util_round_down(double value, double step);
+limit_t util_get_limit(double* values, int length);
+limit_t util_round_limit(limit_t lim, AXIS_SCALE scale);
 
 
 // ticks ------------------------------------------------------------
@@ -62,6 +65,7 @@ ticks_t* ticks_create(AXIS_SCALE scale);
 void ticks_set_scale(ticks_t* ticks, AXIS_SCALE scale);
 void ticks_calculate(ticks_t *ticks , limit_t limit);
 void ticks_print(ticks_t* ticks);
+
 
 // minorticks -------------------------------------------------------
 
@@ -95,12 +99,10 @@ void ticklabels_update(ticklabels_t* ticklabel, double* values, int length);
 
 // axis -------------------------------------------------------------
 
-typedef limit_t (*round_limit_fun_t) (limit_t);
 typedef double (*transform_fun_t) (struct axis_t*, double);
 
 typedef struct axis_t {
 	AXIS_SCALE scale;
-	round_limit_fun_t round_limit_fun;
 	transform_fun_t transform_fun;
 	limit_t limit;
 	ticks_t* ticks;
@@ -111,9 +113,10 @@ typedef struct axis_t {
 axis_t* axis_create(AXIS_SCALE scale);
 void axis_set_scale(axis_t* axis, AXIS_SCALE scale);
 void axis_set_limit(axis_t* axis, limit_t limit);  
+void axis_update_ticks(axis_t* axis);
 double axis_transform(axis_t* axis, double d);
+
 void axis_print(axis_t* axis);
-limit_t axis_round_limit(axis_t* axis, limit_t limit);
 
 
 // datarow ------------------------------------------------------------
@@ -157,9 +160,20 @@ typedef struct graphics_t {  // priv member graph
 	int timerTimeMillis;
 } graphics_t;
 
-point_t graph_to_view(graphics_t* g, point_t p);
+graphics_t* graphics_create();
+void graphics_set_size(graphics_t* graph, dim_t size); 
+void graphics_set_border(graphics_t* g, border_t size);
+void graphics_set_title(graphics_t* graph, wchar_t* title);
+void graphics_set_xlimit(graphics_t* g, limit_t lim);
+void graphics_set_ylimit(graphics_t* g, limit_t lim);
+void graphics_set_xscale(graphics_t* g, AXIS_SCALE scale);
+void graphics_set_yscale(graphics_t* g, AXIS_SCALE scale);
+point_t graphics_to_view(graphics_t* g, point_t p);
+row_t* graphics_add_row(graphics_t* g, double* xvalues, double* yvalues, int length);
+
+
 void graph_print(graph_t* graph);
-void graphics_set_size(graphics_t* graph, dim_t size);  // hack
+
 
 // engine ------------------------------------------------------------------------
 
@@ -174,6 +188,7 @@ typedef struct engine_t {
 	ID2D1SolidColorBrush* blackBrush;
 	ID2D1SolidColorBrush* redBrush;
 	ID2D1SolidColorBrush* grayBrush;
+	ID2D1SolidColorBrush* whiteBrush;
 	ID2D1SolidColorBrush* brushes[BRUSH_COUNT_ROWS];
 	IDWriteFactory* writeFactory;
 	IDWriteTextFormat* textFormatTitle;

@@ -22,6 +22,7 @@ void data_add_row(data_t* data, row_t* row) {
 	data->rows[data->length - 1] = row;
 }
 
+
 limit_t data_get_xlimit(data_t* data) {
 
 	double min = DBL_MAX;

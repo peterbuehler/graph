@@ -3,12 +3,21 @@
 #define PI 3.14156
 
 void test_util() {
+
 	double a = 1235; double b = 50;
-	printf("round up %f %f = %f\n", a, b, round_up(a, b));
-	printf("round down %f %f = %f\n", a, b, round_down(a, b));
+	printf("round up %g, %g -> %g\n", a, b, util_round_up(a, b));			// 1250
+	printf("round down %g, %g -> %g\n", a, b, util_round_down(a, b));		// 1200
 	a = 0.3; b = 0.5;
-	printf("round up %f %f = %f\n", a, b, round_up(a, b));
-	printf("round down %f %f = %f\n", a, b, round_down(a, b));
+	printf("round up %g, %g -> %g\n", a, b, util_round_up(a, b));			// 0.5
+	printf("round down %g, %g -> %g\n", a, b, util_round_down(a, b));		// 0
+
+	limit_t lim = {-12, 349};
+	limit_t r = util_round_limit(lim, SCALE_LIN);
+	printf("round limit lin: {%g, %g} -> {%g, %g}\n", lim.min, lim.max, r.min, r.max);  // -20, 350
+	lim = { 0.0032, 34 };
+	r = util_round_limit(lim, SCALE_LOG);
+	printf("round limit log: {%g, %g} -> {%g, %g}\n", lim.min, lim.max, r.min, r.max);  // 0.001, 100
+
 }
 
 void test_ticks_lin() {
@@ -89,6 +98,7 @@ void test_graph_log() {
 
 }
 
+// set ramdom values 0...10
 void set_random_data(double* v, int length) {
 	for (int i = 0; i < length; i++) {
 		v[i] = ((double) rand()) / RAND_MAX * 10.0;
@@ -109,7 +119,44 @@ void test_change_data() {
 		set_random_data(v, 500);
 		graph_update_row(row);
 	}
-	
+}
+
+double* get_random_values(int length, double min, double max) {
+	double* v = (double*)malloc(length * sizeof(double));
+	double delta = max - min;
+	for (int i = 0; i < length; i++) {
+		v[i] = ((double)rand()) / RAND_MAX * delta + min;
+	}
+	return v;
+}
+
+
+// test if graph is clipped
+void test_change_limit() {
+
+	int length = 100;
+	double* d = get_random_values(length, 0, 10);
+
+	graph_t* g = graph_create();
+	row_t* row = graph_add_row_simple(g, d, length);
+	graph_set_ylimit(g, { 2, 8 });
+	graph_set_xlimit(g, { 20, 50 });
+	graph_show(g);
+
+}
+
+// test if scale can be changed after row is added
+void test_change_scale() {
+
+	int length = 100;
+	double* d = get_random_values(length, 0.1, 1000);
+
+	graph_t* g = graph_create();
+	row_t* row = graph_add_row_simple(g, d, length);
+	graph_set_yscale(g, SCALE_LOG);
+
+	// graph_set_xscale(g, SCALE_LOG);  // should print error
+	graph_show(g);
 
 }
 
@@ -121,8 +168,10 @@ int main() {
 	//test_minor_ticks();
 	//test_graph1();
 	//test_graph_log();
-	test_change_data();
+	//test_change_data();
 	
+	//test_change_limit();
+	test_change_scale();
 
 	
 }

@@ -140,6 +140,7 @@
     <ClCompile Include="datarow.cpp" />
     <ClCompile Include="engine.cpp" />
     <ClCompile Include="graph.cpp" />
+    <ClCompile Include="graphics.cpp" />
     <ClCompile Include="minorticks.cpp" />
     <ClCompile Include="ticklabels.cpp" />
     <ClCompile Include="ticks.cpp" />

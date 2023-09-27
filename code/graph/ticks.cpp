@@ -53,7 +53,7 @@ static void ticks_calc_lin(ticks_t* ticks, limit_t limit) {
 	// printf("min=%f, max=%f, delta=%f, dim=%f, x=%f, gap=%f\n", limit.min, limit.max, delta, dim, x, gap);
 
 	// Anzahl Werte bestimmen
-	double firstValue = round_up(limit.min, gap);
+	double firstValue = util_round_up(limit.min, gap);
 	double tmp = firstValue;
 	int cnt = 1;
 	while (tmp <= limit.max) {
