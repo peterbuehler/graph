@@ -1,4 +1,4 @@
-readme version 1.1
+readme version 1.0.1
 
 - graph is clipped if larger than painting area
 - check if values >0 when using logarithmic scale
